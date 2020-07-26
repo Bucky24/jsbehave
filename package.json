@@ -1,0 +1,26 @@
+{
+    "name": "jsbehave",
+    "version": "0.1.0",
+    "description": "A module that allows BDD testing for browser based testing in Selenium.",
+    "main": "src/index.js",
+    "scripts": {
+        "test": "echo \"Error: no test specified\" && exit 1"
+    },
+    "repository": {
+        "type": "git",
+        "url": "git+https://github.com/Bucky24/jsbehave.git"
+    },
+    "files": [
+        "src"
+    ],
+    "keywords": [
+        "bdd",
+        "testing"
+    ],
+    "author": "Bucky24",
+    "license": "MIT",
+    "bugs": {
+        "url": "https://github.com/Bucky24/jsbehave/issues"
+    },
+    "homepage": "https://github.com/Bucky24/jsbehave#readme"
+}
