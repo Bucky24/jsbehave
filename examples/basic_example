@@ -1,0 +1,8 @@
+; format from https://en.wikipedia.org/wiki/Behavior-driven_development
+Title: Basic Example - searching Google
+
+As a user,
+I want to be able to search Google for queries,
+so that I can get results for my search.
+
+Scenario search: Searching for ""

@@ -22,5 +22,8 @@
     "bugs": {
         "url": "https://github.com/Bucky24/jsbehave/issues"
     },
-    "homepage": "https://github.com/Bucky24/jsbehave#readme"
+    "homepage": "https://github.com/Bucky24/jsbehave#readme",
+    "dependencies": {
+        "selenium-webdriver": "^4.0.0-alpha.7"
+    }
 }
