@@ -1,2 +1,2 @@
 # jsbehave
-A module that allows BDD testing for browser based testing in Selenium.
+A module that allows an easy way to write browser based testing in Selenium
