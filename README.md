@@ -4,17 +4,29 @@ A module that allows an easy way to write browser based testing in Selenium
 ## Operations
 
 `open <browser>`
+
 `navigate to <url>`
+
 `type <text> into <selector>`
+
 `wait for title to be <text>`
+
 `[test <string>]`
+
 `[endtest]`
+
 `click <selector>`
+
 `sleep <number>`
+
 `wait until located <selector>`
+
 `load <config file>`
+
 `expect element <selector> to have text <text>`
+
 `expect element <selector> to exist`
+
 `expect element <selector> to not exist`
 
 ## Text
