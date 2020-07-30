@@ -28,6 +28,10 @@ A module that allows an easy way to write browser based testing in Selenium
 `expect element <selector> to exist`
 
 `expect element <selector> to not exist`
+	
+`close browser`
+
+`reload page`
 
 ## Text
 

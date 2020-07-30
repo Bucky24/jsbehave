@@ -4,4 +4,7 @@ navigate to http://www.google.com
 type "webdriver" into name=q
 type return into name=q
 wait for title to be "webdriver - Google Search"
+reload page
+sleep 3
+close browser
 [endtest]

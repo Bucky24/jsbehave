@@ -1,3 +1,5 @@
+#!/usr/bin/env node
+
 const {Builder, By, Key, until} = require('selenium-webdriver');
 const fs = require("fs");
 const { EOL } = require('os');
@@ -146,6 +148,17 @@ async function elementExists([ selector, operation ]) {
     }
 }
 
+function closeBrowser() {
+    if (variables["jsbehave.driver"]) {
+        return variables["jsbehave.driver"].quit();
+    }
+}
+
+async function reloadPage() {
+	const url = await driver().getCurrentUrl();
+	return driver().get(url);
+}
+
 const operations = {
     "open (.+)": openBrowser,
     "navigate to (.+)": goToPage,
@@ -159,6 +172,8 @@ const operations = {
     "load (.+)": loadConfig,
     "expect element (.+) to have text (.+)": waitForText,
     "expect element (.+) to (not exist|exist)": elementExists,
+	"close browser": closeBrowser,
+	"reload page": reloadPage,
 };
 
 (async function example() {
@@ -198,8 +213,4 @@ const operations = {
     }
 
     await handleLines();
-    
-    if (variables["jsbehave.driver"]) {
-        //await variables["jsbehave.driver"].quit();
-    }
 })();
