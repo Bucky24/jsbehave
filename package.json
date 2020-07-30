@@ -13,8 +13,11 @@
     "files": [
         "src"
     ],
+	"bin": {
+		"jsbehave": "./src/index.js"
+	},
     "keywords": [
-        "selenium",
+		"selenium",
         "testing"
     ],
     "author": "Bucky24",
