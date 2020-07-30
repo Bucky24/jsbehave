@@ -1,13 +1,19 @@
 const {Builder, By, Key, until} = require('selenium-webdriver');
 const fs = require("fs");
 const { EOL } = require('os');
+const { exception } = require('console');
 
 const fileName = process.argv[2];
 
 const contents = fs.readFileSync(fileName, "utf-8");
 const lines = contents.split(EOL);
 
-const variables = {};
+const now = new Date();
+const nowDate = `${now.getMonth()}-${now.getDate()}-${now.getFullYear()}`;
+
+const variables = {
+    "today_date": nowDate,
+};
 
 function getVariable(name) {
     return variables[name];
@@ -44,22 +50,31 @@ const keyLookup = {
     "return": Key.RETURN,
 };
 
+function getText(string) {
+    if (string.startsWith("\"") && string.endsWith("\"")) {
+        string = string.substr(1, string.length-2);
+    } else if (string.startsWith("$")) {
+        const varName = string.substr(1);
+        string = getVariable(varName);
+    } else {
+        string = keyLookup[string];
+    }
+
+    return string;
+}
+
 function typeKeys([ string, selector ]) {
     const sel = getSelector(selector);
 
     const element = driver().findElement(sel);
 
-    if (string.startsWith("\"") && string.endsWith("\"")) {
-        string = string.substr(1, string.length-2);
-    } else {
-        string = keyLookup[string];
-    }
+    string = getText(string);
 
     return element.sendKeys(string);
 }
 
 function waitForTitle([ title ]) {
-    return driver().wait(until.titleIs(title), 5000)
+    return driver().wait(until.titleIs(title), 10000)
 }
 
 function startTest([ test ]) {
@@ -80,6 +95,7 @@ function clickElement([ selector ]) {
 }
 
 function sleep([ seconds ]) {
+    seconds = parseFloat(seconds);
     return new Promise((resolve) => {
         setTimeout(resolve, seconds * 1000);
     });
@@ -87,7 +103,47 @@ function sleep([ seconds ]) {
 
 function waitForElement([ selector ]) {
     const sel = getSelector(selector);
-    return driver().wait(until.elementLocated(sel, 5000));
+    return driver().wait(until.elementLocated(sel, 10000));
+}
+
+function loadConfig([ fileName ]) {
+    const content = fs.readFileSync(fileName, "utf-8");
+
+    const lines = content.split(EOL);
+    for (const line of lines) {
+        const [name, value] = line.split("=");
+        variables[name] = value;
+    }
+}
+
+async function waitForText([ selector, text ]) {
+    const sel = getSelector(selector);
+    const elem = await driver().findElement(sel);
+    text = getText(text);
+    if (elem.text === text) {
+        return;
+    }
+
+    const value = await elem.getAttribute("value")
+    if (value === text) {
+        return;
+    }
+
+    throw new Error(`Expected element to have text ${text}. Instead it had text of ${elem.text} and value of ${value}`);
+}
+
+async function elementExists([ selector, operation ]) {
+    const sel = getSelector(selector);
+    const elem = await driver().findElements(sel);
+    if (operation == "exist") {
+        if (elem.length == 0) {
+            throw new Error("Expected element to exist but it did not");
+        }
+    } else if (operation == "not exist") {
+        if (elem.length > 0) {
+            throw new Error("Expected element to not exist but it did");
+        }
+    }
 }
 
 const operations = {
@@ -100,6 +156,9 @@ const operations = {
     "click (.+)": clickElement,
     "sleep (.+)": sleep,
     "wait until located (.+)": waitForElement,
+    "load (.+)": loadConfig,
+    "expect element (.+) to have text (.+)": waitForText,
+    "expect element (.+) to (not exist|exist)": elementExists,
 };
 
 (async function example() {
@@ -122,6 +181,8 @@ const operations = {
                         const test = variables["jbehave.activeTest"];
                         if (test) {
                             console.log(`Test ${test} - FAILURE`, error);
+                        } else {
+                            console.error(error);
                         }
                         return;
                     }
