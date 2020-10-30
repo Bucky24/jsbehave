@@ -3,7 +3,6 @@
 const {Builder, By, Key, until} = require('selenium-webdriver');
 const fs = require("fs");
 const { EOL } = require('os');
-const { exception } = require('console');
 
 const fileName = process.argv[2];
 let specificTest = null;
@@ -41,16 +40,22 @@ function getSelector(selector) {
         return By.xpath(`//*[text()="${finalVal}"]`);
     } else if (type === "selector") {
         return By.css(finalVal);
+    } else if (type === "id") {
+        return By.id(finalVal);
     }
 }
 
 async function openBrowser([ browser ]) {
+    if (variables["jsbehave.driver"]) {
+        return;
+    }
     const driver = await new Builder().forBrowser(browser).build();
     variables["jsbehave.driver"] = driver;
 }
 
 function goToPage([ url ]) {
-    return driver().get(url);
+    const fullUrl = getText(url);
+    return driver().get(fullUrl);
 }
 
 const keyLookup = {
@@ -63,7 +68,7 @@ function getText(string) {
     } else if (string.startsWith("$")) {
         const varName = string.substr(1);
         string = getVariable(varName);
-    } else {
+    } else if (keyLookup[string]) {
         string = keyLookup[string];
     }
 
@@ -110,7 +115,7 @@ function sleep([ seconds ]) {
 
 function waitForElement([ selector ]) {
     const sel = getSelector(selector);
-    return driver().wait(until.elementLocated(sel, 10000));
+    return driver().wait(until.elementLocated(sel), 10000);
 }
 
 function loadConfig([ fileName ]) {
@@ -222,15 +227,24 @@ async function handleLines(lines) {
     // first pass, consolidate all the code into test blocks
 
     const allTests = {}
+    let startLines = [];
+    let endLines = [];
 
     let testLines = [];
     let inTest = false;
     let testName = null;
     for (const line of lines) {
+        if (line === "") {
+            continue;
+        }
         if (line.startsWith("[test")) {
             const reg = RegExp(`^${startTestRegex}$`)
             const matches = line.match(reg);
+
             if (matches) {
+                if (testLines.length > 0) {
+                    startLines = [...testLines];
+                }
                 const params = [...matches];
                 inTest = true;
                 testLines = [];
@@ -248,20 +262,28 @@ async function handleLines(lines) {
         }
     }
 
+    if (testLines.length > 0) {
+        endLines = [...testLines];
+    }
+
     if (specificTest) {
         if (!allTests[specificTest]) {
             console.log("No test case found for '" + specificTest + "'");
             console.log(Object.keys(allTests));
             return;
         }
+
+        await handleLines(startLines);
         console.log("Running '" + specificTest + "'");
         const content = allTests[specificTest];
         await handleLines(content);
-        return;
-    }
-
-    for (const testName in allTests) {
-        const content = allTests[testName];
-        await handleLines(content);
+        await handleLines(endLines);
+    } else {
+        await handleLines(startLines);
+        for (const testName in allTests) {
+            const content = allTests[testName];
+            await handleLines(content);
+        }
+        await handleLines(endLines);
     }
 })();
