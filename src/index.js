@@ -6,6 +6,11 @@ const { EOL } = require('os');
 const { exception } = require('console');
 
 const fileName = process.argv[2];
+let specificTest = null;
+
+if (process.argv.length > 3) {
+    specificTest = process.argv[3];
+}
 
 const contents = fs.readFileSync(fileName, "utf-8");
 const lines = contents.split(EOL);
@@ -159,12 +164,14 @@ async function reloadPage() {
 	return driver().get(url);
 }
 
+const startTestRegex = "\\[test (.+)\\]";
+
 const operations = {
     "open (.+)": openBrowser,
     "navigate to (.+)": goToPage,
     "type (.+) into (.+)": typeKeys,
     "wait for title to be \"(.+)\"": waitForTitle,
-    "\\[test (.+)\\]": startTest,
+    [startTestRegex]: startTest,
     "\\[endtest\\]": endTest,
     "click (.+)": clickElement,
     "sleep (.+)": sleep,
@@ -176,41 +183,85 @@ const operations = {
 	"reload page": reloadPage,
 };
 
-(async function example() {
-    const handleLines = async () => {
-        for (let line of lines) {
-            if (line === "") {
-                continue;
-            }
-            let handled = false;
-            for (const operation in operations) {
-                const reg = RegExp(`^${operation}$`)
-                const matches = line.match(reg);
-                if (matches) {
-                    const params = [...matches];
-                    params.shift();
-                    const func = operations[operation];
-                    try {
-                        await func(params);
-                    } catch (error) {
-                        const test = variables["jbehave.activeTest"];
-                        if (test) {
-                            console.log(`Test ${test} - FAILURE`, error);
-                        } else {
-                            console.error(error);
-                        }
-                        return;
+async function handleLines(lines) {
+    for (let line of lines) {
+        if (line === "") {
+            continue;
+        }
+        let handled = false;
+        for (const operation in operations) {
+            const reg = RegExp(`^${operation}$`)
+            const matches = line.match(reg);
+            if (matches) {
+                const params = [...matches];
+                params.shift();
+                const func = operations[operation];
+                try {
+                    await func(params);
+                } catch (error) {
+                    const test = variables["jbehave.activeTest"];
+                    if (test) {
+                        console.log(`Test ${test} - FAILURE`, error);
+                    } else {
+                        console.error(error);
                     }
-                    handled = true;
-                    break;
+                    return;
                 }
+                handled = true;
+                break;
             }
-            
-            if (!handled) {
-                console.log(`Unable to handle "${line}"`);
+        }
+
+        if (!handled) {
+            console.log(`Unable to handle "${line}"`);
+        }
+    }
+}
+
+(async function main() {
+    // first pass, consolidate all the code into test blocks
+
+    const allTests = {}
+
+    let testLines = [];
+    let inTest = false;
+    let testName = null;
+    for (const line of lines) {
+        if (line.startsWith("[test")) {
+            const reg = RegExp(`^${startTestRegex}$`)
+            const matches = line.match(reg);
+            if (matches) {
+                const params = [...matches];
+                inTest = true;
+                testLines = [];
+                testName = params[1];
             }
+        }
+
+        testLines.push(line);
+
+        if (line.startsWith("[endtest")) {
+            inTest = false;
+            allTests[testName] = [...testLines]
+            testName = null;
+            testLines = [];
         }
     }
 
-    await handleLines();
+    if (specificTest) {
+        if (!allTests[specificTest]) {
+            console.log("No test case found for '" + specificTest + "'");
+            console.log(Object.keys(allTests));
+            return;
+        }
+        console.log("Running '" + specificTest + "'");
+        const content = allTests[specificTest];
+        await handleLines(content);
+        return;
+    }
+
+    for (const testName in allTests) {
+        const content = allTests[testName];
+        await handleLines(content);
+    }
 })();

@@ -1,6 +1,12 @@
 # jsbehave
 A module that allows an easy way to write browser based testing in Selenium
 
+# Usage
+
+In order to use this, you must have the webdriver for your chosen browser accessible in your path. For example, using Chrome:
+* Download chromedriver for your browser version
+* Move the binary to /usr/local/bin
+
 ## Operations
 
 `open <browser>`
@@ -28,16 +34,20 @@ A module that allows an easy way to write browser based testing in Selenium
 `expect element <selector> to exist`
 
 `expect element <selector> to not exist`
-	
+
 `close browser`
 
 `reload page`
+
+## Tests
+
+The operations `[test <name>]` and `[endtest]` indicate a test block.
 
 ## Text
 
 Text that is wrapped in double quotes is treated as text
 
-Text that is return sends the enter key to the element
+Text that is "return" (without quotes) sends the enter key to the element
 
 Text that starts with a $ will load a variable of the same name
 

@@ -8,3 +8,14 @@ reload page
 sleep 3
 close browser
 [endtest]
+
+[test search2]
+open chrome
+navigate to http://www.google.com
+type "javascript" into name=q
+type return into name=q
+wait for title to be "javascript - Google Search"
+reload page
+sleep 3
+close browser
+[endtest]
