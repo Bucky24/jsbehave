@@ -102,3 +102,33 @@ close browser
 ```
 
 `[before all]` blocks will run before all the tests. `[before each]` runs before each test. `[after each]` runs after each test, and `[after all]` runs after all the tests are done. This is similar to most other test systems.
+
+## Custom code
+
+In order to load custom code, put `load funcs <filename>` in your test file.
+
+The function should set `module.exports` to an object that looks like the following:
+
+```
+module.exports = {
+    "selectors": {
+        "<selector type>": <selector function>
+    }
+}
+```
+
+### Selectors
+
+Selector functions should have the following header:
+
+```
+function selectorFunction({ By }, inputText)
+```
+
+And should return a selector method `By.*`. They can be used as follows:
+
+```
+type Blah into selector-type=foo
+```
+
+In this case the system will expect that you've setup `selector-type` as a selector. In this case `foo` would be the value of `inputText`.

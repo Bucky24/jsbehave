@@ -3,6 +3,7 @@
 const {Builder, By, Key, until} = require('selenium-webdriver');
 const fs = require("fs");
 const { EOL } = require('os');
+const path = require("path");
 
 const fileName = process.argv[2];
 let specificTest = null;
@@ -15,7 +16,7 @@ const contents = fs.readFileSync(fileName, "utf-8");
 const lines = contents.split(EOL);
 
 const now = new Date();
-const nowDate = `${now.getMonth()}-${now.getDate()}-${now.getFullYear()}`;
+const nowDate = `${now.getMonth()+1}-${now.getDate()}-${now.getFullYear()}`;
 
 const variables = {
     "today_date": nowDate,
@@ -27,6 +28,7 @@ const beforeAll = [];
 const beforeEach = [];
 const afterAll = [];
 const afterEach = [];
+let customSelectors = {};
 
 function getVariable(name) {
     return variables[name];
@@ -51,6 +53,10 @@ function getSelector(selector) {
         return By.id(finalVal);
     } else if (type === "data-id") {
         return By.css(`*[data-test-id="${finalVal}"]`);
+    } else if (type === "xpath") {
+        return By.xpath(finalVal);
+    } else if (customSelectors[type]) {
+        return customSelectors[type]({ By }, finalVal);
     }
 }
 
@@ -86,11 +92,9 @@ function getText(string) {
 
 function typeKeys([ string, selector ]) {
     const sel = getSelector(selector);
-
     const element = driver().findElement(sel);
 
     string = getText(string);
-
     return element.sendKeys(string);
 }
 
@@ -213,6 +217,19 @@ async function runTestIfNotRun([ testName ]) {
     variables["jsbehave.activeTest"] = oldTest;
 }
 
+function loadFuncs([ fileName ]) {
+    const cwd = process.cwd()
+    const fullPath = path.resolve(cwd, fileName);
+    const importFuncs = require(fullPath);
+
+    if (importFuncs.selectors) {
+        customSelectors = {
+            ...customSelectors,
+            ...importFuncs.selectors,
+        };
+    }
+}
+
 const startTestRegex = "\\[test (.+)\\]";
 
 const operations = {
@@ -225,6 +242,7 @@ const operations = {
     "click (.+)": clickElement,
     "sleep (.+)": sleep,
     "wait until located (.+)": waitForElement,
+    "load funcs (.+)": loadFuncs,
     "load (.+)": loadConfig,
     "expect element (.+) to have text (.+)": waitForText,
     "expect element (.+) to (not exist|exist)": elementExists,
@@ -379,7 +397,7 @@ async function handleLines(lines) {
             await handleLines(before);
         }
         for (const testName in allTests) {
-            await runTest(testName);
+            await runTest(testName, true);
         }
         console.log("Running afterAll");
         for (const after of afterAll) {
