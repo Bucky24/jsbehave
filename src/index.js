@@ -19,7 +19,14 @@ const nowDate = `${now.getMonth()}-${now.getDate()}-${now.getFullYear()}`;
 
 const variables = {
     "today_date": nowDate,
+    "jsbehave.run_tests": [],
 };
+
+const allTests = {};
+const beforeAll = [];
+const beforeEach = [];
+const afterAll = [];
+const afterEach = [];
 
 function getVariable(name) {
     return variables[name];
@@ -42,6 +49,8 @@ function getSelector(selector) {
         return By.css(finalVal);
     } else if (type === "id") {
         return By.id(finalVal);
+    } else if (type === "data-id") {
+        return By.css(`*[data-test-id="${finalVal}"]`);
     }
 }
 
@@ -90,14 +99,14 @@ function waitForTitle([ title ]) {
 }
 
 function startTest([ test ]) {
-    variables["jbehave.activeTest"] = test;
+    variables["jsbehave.activeTest"] = test;
 }
 
 function endTest() {
-    const test = variables["jbehave.activeTest"];
+    const test = variables["jsbehave.activeTest"];
 
     console.log(`Test ${test} - SUCCESS`);
-    delete variables["jbehave.activeTest"];
+    delete variables["jsbehave.activeTest"];
 }
 
 function clickElement([ selector ]) {
@@ -169,6 +178,41 @@ async function reloadPage() {
 	return driver().get(url);
 }
 
+async function noop() {
+    // nothing
+}
+
+async function runTest(name, showTitle=false) {
+    for (const before of beforeEach) {
+        await handleLines(before);
+    }
+    if (showTitle) {
+        console.log("Running '" + name + "'");
+    }
+    const content = allTests[name];
+    await handleLines(content);
+    for (const after of afterEach) {
+        await handleLines(after);
+    }
+
+    const testsRun = getVariable("jsbehave.run_tests");
+    variables["jsbehave.run_tests"] = [
+        ...testsRun,
+        name,
+    ];
+}
+
+async function runTestIfNotRun([ testName ]) {
+    const testsRun = getVariable("jsbehave.run_tests");
+    if (testsRun.includes(testName)) {
+        return;
+    }
+    const oldTest = getVariable("jsbehave.activeTest");
+
+    await runTest(testName, true);
+    variables["jsbehave.activeTest"] = oldTest;
+}
+
 const startTestRegex = "\\[test (.+)\\]";
 
 const operations = {
@@ -185,12 +229,24 @@ const operations = {
     "expect element (.+) to have text (.+)": waitForText,
     "expect element (.+) to (not exist|exist)": elementExists,
 	"close browser": closeBrowser,
-	"reload page": reloadPage,
+    "reload page": reloadPage,
+    "\\[before all\\]": noop,
+    "\\[before each\\]": noop,
+    "\\[endbefore\\]": noop,
+    "\\[after all\\]": noop,
+    "\\[after each\\]": noop,
+    "\\[endafter\\]": noop,
+    "require test (.+)": runTestIfNotRun,
 };
 
 async function handleLines(lines) {
     for (let line of lines) {
         if (line === "") {
+            continue;
+        }
+
+        if (line.startsWith("#")) {
+            // skip, commented line
             continue;
         }
         let handled = false;
@@ -204,9 +260,11 @@ async function handleLines(lines) {
                 try {
                     await func(params);
                 } catch (error) {
-                    const test = variables["jbehave.activeTest"];
+                    const test = variables["jsbehave.activeTest"];
                     if (test) {
-                        console.log(`Test ${test} - FAILURE`, error);
+                        console.log(`Test ${test} - FAILURE`);
+                        console.log(`Failure when running line "${line}"`);
+                        console.log(error);
                     } else {
                         console.error(error);
                     }
@@ -226,13 +284,13 @@ async function handleLines(lines) {
 (async function main() {
     // first pass, consolidate all the code into test blocks
 
-    const allTests = {}
     let startLines = [];
     let endLines = [];
 
     let testLines = [];
     let inTest = false;
     let testName = null;
+    let allOrEach = null;
     for (const line of lines) {
         if (line === "") {
             continue;
@@ -250,6 +308,18 @@ async function handleLines(lines) {
                 testLines = [];
                 testName = params[1];
             }
+        } else if (line.startsWith("[before")) {
+            if (line === "[before all]") {
+                allOrEach = 'all';
+            } else if (line === "[before each]") {
+                allOrEach = 'each';
+            }
+        } else if (line.startsWith("[after")) {
+            if (line === "[after all]") {
+                allOrEach = 'all';
+            } else if (line === "[after each]") {
+                allOrEach = 'each';
+            }
         }
 
         testLines.push(line);
@@ -259,6 +329,24 @@ async function handleLines(lines) {
             allTests[testName] = [...testLines]
             testName = null;
             testLines = [];
+        } else if (line === "[endbefore]") {
+            if (allOrEach === "all") {
+                beforeAll.push([...testLines])
+                testLines = [];
+            } else if (allOrEach = "every") {
+                beforeEach.push([...testLines])
+                testLines = [];
+            }
+            allOrEach = null;
+        } else if (line === "[endafter]") {
+            if (allOrEach === "all") {
+                afterAll.push([...testLines])
+                testLines = [];
+            } else if (allOrEach = "every") {
+                afterEach.push([...testLines])
+                testLines = [];
+            }
+            allOrEach = null;
         }
     }
 
@@ -274,15 +362,28 @@ async function handleLines(lines) {
         }
 
         await handleLines(startLines);
-        console.log("Running '" + specificTest + "'");
-        const content = allTests[specificTest];
-        await handleLines(content);
+        console.log("Running beforeAll");
+        for (const before of beforeAll) {
+            await handleLines(before);
+        }
+        await runTest(specificTest, true);
+        console.log("Running afterAll");
+        for (const after of afterAll) {
+            await handleLines(after);
+        }
         await handleLines(endLines);
     } else {
         await handleLines(startLines);
+        console.log("Running beforeAll");
+        for (const before of beforeAll) {
+            await handleLines(before);
+        }
         for (const testName in allTests) {
-            const content = allTests[testName];
-            await handleLines(content);
+            await runTest(testName);
+        }
+        console.log("Running afterAll");
+        for (const after of afterAll) {
+            await handleLines(after);
         }
         await handleLines(endLines);
     }

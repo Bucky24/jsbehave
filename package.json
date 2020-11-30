@@ -1,10 +1,10 @@
 {
     "name": "jsbehave",
-    "version": "0.2.0",
+    "version": "0.3.0",
     "description": "A module that allows BDD testing for browser based testing in Selenium.",
     "main": "src/index.js",
     "scripts": {
-        "test": "echo \"Error: no test specified\" && exit 1"
+        "test": "node src/index.js examples/basic_example"
     },
     "repository": {
         "type": "git",

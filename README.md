@@ -39,6 +39,8 @@ In order to use this, you must have the webdriver for your chosen browser access
 
 `reload page`
 
+`require test <test name>`
+
 ## Tests
 
 The operations `[test <name>]` and `[endtest]` indicate a test block.
@@ -60,6 +62,8 @@ Selectors are of the format `type=value`
 | name | Searches by element name |
 | text | Searches for elements containing text |
 | selector | Searches for elements matching css selector |
+| id | Searches for elements with the given id |
+| data-id | Searches for elements with the given data-test-id |
 
 ## Config File
 
@@ -70,3 +74,31 @@ var_name2=value2
 ```
 
 Each value is stored as a variable with the given name.
+
+## Before and After blocks
+
+Code in these blocks looks like the following:
+
+```
+[before all]
+open chrome
+[endbefore]
+
+[before each]
+reload page
+[endbefore]
+
+[test blah]
+
+[endtest]
+
+[after each]
+# cleanup
+[endafter]
+
+[after all]
+close browser
+[endafter]
+```
+
+`[before all]` blocks will run before all the tests. `[before each]` runs before each test. `[after each]` runs after each test, and `[after all]` runs after all the tests are done. This is similar to most other test systems.
