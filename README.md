@@ -9,7 +9,7 @@ In order to use this, you must have the webdriver for your chosen browser access
 
 ## Operations
 
-`open <browser>`
+`open <browser>` (note the name for this browser is `default`)
 
 `navigate to <url>`
 
@@ -41,6 +41,16 @@ In order to use this, you must have the webdriver for your chosen browser access
 
 `require test <test name>`
 
+`expect elements <selector> to have count of <count>`
+
+`expect variable <variable> to match <text>`
+
+`open <browser> as <name>`
+
+`close browser <name>`
+
+`set active browser to <name>`
+
 ## Tests
 
 The operations `[test <name>]` and `[endtest]` indicate a test block.
@@ -52,6 +62,16 @@ Text that is wrapped in double quotes is treated as text
 Text that is "return" (without quotes) sends the enter key to the element
 
 Text that starts with a $ will load a variable of the same name
+
+Text that starts with a `/` may be considered a regex by some commands
+
+## Variables
+
+There are some special variables:
+
+| Name | Description |
+| ---- | ----------- |
+| clipboard | Reads the active value from the clipboard |
 
 ## Selector
 

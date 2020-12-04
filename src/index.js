@@ -4,6 +4,7 @@ const {Builder, By, Key, until} = require('selenium-webdriver');
 const fs = require("fs");
 const { EOL } = require('os');
 const path = require("path");
+const clipboardy = require('clipboardy');
 
 const fileName = process.argv[2];
 let specificTest = null;
@@ -31,11 +32,15 @@ const afterEach = [];
 let customSelectors = {};
 
 function getVariable(name) {
+    if (name === 'clipboard') {
+        return clipboardy.readSync();
+    }
     return variables[name];
 }
 
 function driver() {
-    return getVariable("jsbehave.driver");
+    const name = getVariable("jsbehave.active_driver") || "default";
+    return getVariable(`jsbehave.driver.${name}`);
 }
 
 function getSelector(selector) {
@@ -61,11 +66,24 @@ function getSelector(selector) {
 }
 
 async function openBrowser([ browser ]) {
-    if (variables["jsbehave.driver"]) {
+    const name = "default"
+    const driverName = `jsbehave.driver.${name}`;
+    if (variables[driverName]) {
         return;
     }
     const driver = await new Builder().forBrowser(browser).build();
-    variables["jsbehave.driver"] = driver;
+    variables[driverName] = driver;
+    variables["jsbehave.active_driver"] = name;
+}
+
+async function openBrowserWithName([ browser, name ]) {
+    const driverName = `jsbehave.driver.${name}`;
+    if (variables[driverName]) {
+        return;
+    }
+    const driver = await new Builder().forBrowser(browser).build();
+    variables[driverName] = driver;
+    variables["jsbehave.active_driver"] = name;
 }
 
 function goToPage([ url ]) {
@@ -77,7 +95,7 @@ const keyLookup = {
     "return": Key.RETURN,
 };
 
-function getText(string) {
+function getText(string, allowRegex) {
     if (string.startsWith("\"") && string.endsWith("\"")) {
         string = string.substr(1, string.length-2);
     } else if (string.startsWith("$")) {
@@ -85,6 +103,11 @@ function getText(string) {
         string = getVariable(varName);
     } else if (keyLookup[string]) {
         string = keyLookup[string];
+    } else if (string.startsWith("/") && allowRegex) {
+        let regexStr = string.substr(1);
+        if (string.endsWith("/"));
+        regexStr = regexStr.substr(0, regexStr.length-1)
+        string = new RegExp(regexStr);
     }
 
     return string;
@@ -172,9 +195,13 @@ async function elementExists([ selector, operation ]) {
 }
 
 function closeBrowser() {
-    if (variables["jsbehave.driver"]) {
-        return variables["jsbehave.driver"].quit();
+    const activeBrowser = getVariable("jsbehave.active_driver");
+    const driver = getVariable(`jsbehave.driver.${activeBrowser}`);
+    if (!driver) {
+        throw new Error("Unable to close default browser: no driver found");
     }
+    delete variables[`jsbehave.driver.${activeBrowser}`];
+    return driver.close();
 }
 
 async function reloadPage() {
@@ -230,9 +257,60 @@ function loadFuncs([ fileName ]) {
     }
 }
 
+async function expectElementCount([ selector, count ]) {
+    const countInt = parseInt(count, 10);
+    const sel = getSelector(selector);
+    const elems = await driver().findElements(sel);
+
+    if (elems.length !== countInt) {
+        throw new Error(`Expected to find ${countInt} elements but found ${elems.length}`);
+    }
+}
+
+function matchVariable([ variable, text ]) {
+    const workingVariable = variable.startsWith("$") ? variable.substr(1) : variable;
+    const matchText = getText(text, true);
+
+    const value = getVariable(workingVariable);
+    let match = false;
+
+    if (value) {
+        if (matchText instanceof RegExp) {
+            const result = value.match(matchText);
+            match = !!result;
+        } else {
+            match = matchText == value;
+        }
+    }
+
+    if (!match) {
+        throw new Error(`Expected variable ${workingVariable} to be "${text}" but it was "${value}"`);
+    }
+}
+
+function setActiveBrowser([ name ]) {
+    const driverTest = getVariable(`jsbehave.driver.${name}`);
+
+    if (!driverTest) {
+        throw new Error(`Unable to set active browser to "${name}": no active driver found for name`);
+    }
+
+    variables["jsbehave.active_driver"] = name;
+}
+
+function closeBrowserWithName([ name ]) {
+    const driver = getVariable(`jsbehave.driver.${name}`);
+    if (!driver) {
+        throw new Error(`Unable to close browser with name "${name}": no driver found`);
+    }
+    delete variables[`jsbehave.driver.${name}`];
+    return driver.quit();
+}
+
 const startTestRegex = "\\[test (.+)\\]";
 
 const operations = {
+    "open (.+) as (.+)": openBrowserWithName,
     "open (.+)": openBrowser,
     "navigate to (.+)": goToPage,
     "type (.+) into (.+)": typeKeys,
@@ -246,6 +324,7 @@ const operations = {
     "load (.+)": loadConfig,
     "expect element (.+) to have text (.+)": waitForText,
     "expect element (.+) to (not exist|exist)": elementExists,
+	"close browser (.+)": closeBrowserWithName,
 	"close browser": closeBrowser,
     "reload page": reloadPage,
     "\\[before all\\]": noop,
@@ -255,6 +334,9 @@ const operations = {
     "\\[after each\\]": noop,
     "\\[endafter\\]": noop,
     "require test (.+)": runTestIfNotRun,
+    "expect elements (.+) to have count of (.+)": expectElementCount,
+    "expect variable (.+) to match (.+)": matchVariable,
+    "set active browser to (.+)": setActiveBrowser,
 };
 
 async function handleLines(lines) {
