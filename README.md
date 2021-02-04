@@ -51,6 +51,8 @@ In order to use this, you must have the webdriver for your chosen browser access
 
 `set active browser to <name>`
 
+`expect element <selector> to have contents <text>`
+
 ## Tests
 
 The operations `[test <name>]` and `[endtest]` indicate a test block.
@@ -133,6 +135,9 @@ The function should set `module.exports` to an object that looks like the follow
 module.exports = {
     "selectors": {
         "<selector type>": <selector function>
+    },
+    "operations": {
+        "<operation regex>": <operation function>
     }
 }
 ```
@@ -152,3 +157,22 @@ type Blah into selector-type=foo
 ```
 
 In this case the system will expect that you've setup `selector-type` as a selector. In this case `foo` would be the value of `inputText`.
+
+## Operations
+
+Operation functions should have the following header:
+
+```
+function operationFunction(paramsFromRegex, sdk)
+```
+
+Any return value is ignored (unless it's a promise, in which case it is awaited). Any error thrown from within an operation shows up as a test failure.
+
+Params are any params from capture groups in the regex, and the sdk contains the following:
+
+| Name | Description |
+|------|-------------|
+| driver | The selenium webdriver instance |
+| getVariable | method to get any variable (including config variables) |
+| setVariable | method to set a variable |
+| runTest | method that can run any test group |

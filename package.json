@@ -1,6 +1,6 @@
 {
-    "name": "jsbehave",
-    "version": "0.5.0",
+    "name": "@bucky24/jsbehave",
+    "version": "0.6.0",
     "description": "A module that allows BDD testing for browser based testing in Selenium.",
     "main": "src/index.js",
     "scripts": {

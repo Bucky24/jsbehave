@@ -1,0 +1,28 @@
+[before all]
+open chrome
+[endbefore]
+
+[before each]
+navigate to http://www.google.com
+[endbefore]
+
+[test search]
+type "webdriver" into name=q
+type return into name=q
+wait for title to be "webdriver - Google Search"
+[endtest]
+
+[test search2]
+type "javascript" into name=q
+type return into name=q
+wait for title to be "javascript - Google Search"
+[endtest]
+
+[after each]
+reload page
+sleep 3
+[endafter]
+
+[after all]
+close browser
+[endafter]

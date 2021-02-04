@@ -30,12 +30,17 @@ const beforeEach = [];
 const afterAll = [];
 const afterEach = [];
 let customSelectors = {};
+let customOperations = {};
 
 function getVariable(name) {
     if (name === 'clipboard') {
         return clipboardy.readSync();
     }
     return variables[name];
+}
+
+function setVariable(key, value) {
+    variables[key] = value;
 }
 
 function driver() {
@@ -168,6 +173,7 @@ async function waitForText([ selector, text ]) {
     const sel = getSelector(selector);
     const elem = await driver().findElement(sel);
     text = getText(text);
+    console.log(elem, text, elem.text)
     if (elem.text === text) {
         return;
     }
@@ -255,6 +261,12 @@ function loadFuncs([ fileName ]) {
             ...importFuncs.selectors,
         };
     }
+    if (importFuncs.operations) {
+        customOperations = {
+            ...customOperations,
+            ...importFuncs.operations,
+        };
+    }
 }
 
 async function expectElementCount([ selector, count ]) {
@@ -307,6 +319,18 @@ function closeBrowserWithName([ name ]) {
     return driver.quit();
 }
 
+async function compareContent([ selector, text ]) {
+    const sel = getSelector(selector);
+    const elem = await driver().findElement(sel);
+    text = getText(text);
+    const html = await elem.getAttribute('innerHTML')
+    if (html === text) {
+        return;
+    }
+
+    throw new Error(`Expected element to have inner html of "${text}". Instead it had inner html of "${html}"`);
+}
+
 const startTestRegex = "\\[test (.+)\\]";
 
 const operations = {
@@ -337,6 +361,7 @@ const operations = {
     "expect elements (.+) to have count of (.+)": expectElementCount,
     "expect variable (.+) to match (.+)": matchVariable,
     "set active browser to (.+)": setActiveBrowser,
+    "expect element (.+) to have content (.+)": compareContent,
 };
 
 async function handleLines(lines) {
@@ -345,20 +370,31 @@ async function handleLines(lines) {
             continue;
         }
 
+        const baseSdk = {
+            driver: driver(),
+            getVariable,
+            setVariable,
+            runTest,
+        };
+
         if (line.startsWith("#")) {
             // skip, commented line
             continue;
         }
+        const allOperations = {
+            ...operations,
+            ...customOperations,
+        };
         let handled = false;
-        for (const operation in operations) {
+        for (const operation in allOperations) {
             const reg = RegExp(`^${operation}$`)
             const matches = line.match(reg);
             if (matches) {
                 const params = [...matches];
                 params.shift();
-                const func = operations[operation];
+                const func = allOperations[operation];
                 try {
-                    await func(params);
+                    await func(params, baseSdk);
                 } catch (error) {
                     const test = variables["jsbehave.activeTest"];
                     if (test) {
