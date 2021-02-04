@@ -5,6 +5,7 @@ const fs = require("fs");
 const { EOL } = require('os');
 const path = require("path");
 const clipboardy = require('clipboardy');
+const { v4: uuidv4 } = require('uuid');
 
 const fileName = process.argv[2];
 let specificTest = null;
@@ -51,7 +52,11 @@ function driver() {
 function getSelector(selector) {
     const [type, ...other] = selector.split("=");
 
-    const finalVal = other.join("=");
+    let finalVal = other.join("=");
+
+    if (finalVal.startsWith("$")) {
+        finalVal = getVariable(finalVal.substr(1));
+    }
 
     if (type === "name") {
         return By.name(finalVal);
@@ -66,7 +71,7 @@ function getSelector(selector) {
     } else if (type === "xpath") {
         return By.xpath(finalVal);
     } else if (customSelectors[type]) {
-        return customSelectors[type]({ By }, finalVal);
+        return customSelectors[type]({ By, getVariable }, finalVal);
     }
 }
 
@@ -113,6 +118,8 @@ function getText(string, allowRegex) {
         if (string.endsWith("/"));
         regexStr = regexStr.substr(0, regexStr.length-1)
         string = new RegExp(regexStr);
+    } else if (string === "uuid") {
+        string = uuidv4();
     }
 
     return string;
@@ -250,6 +257,10 @@ async function runTestIfNotRun([ testName ]) {
     variables["jsbehave.activeTest"] = oldTest;
 }
 
+async function doRunTest([ testName]) {
+    return runTest(testName, true);
+}
+
 function loadFuncs([ fileName ]) {
     const cwd = process.cwd()
     const fullPath = path.resolve(cwd, fileName);
@@ -331,6 +342,17 @@ async function compareContent([ selector, text ]) {
     throw new Error(`Expected element to have inner html of "${text}". Instead it had inner html of "${html}"`);
 }
 
+function doSetVariable([ key, input ]) {
+    const finalInput = getText(input);
+    setVariable(key, finalInput);
+}
+
+function concatVariable([ key, input ]) {
+    const finalInput = getText(input);
+    const oldValue = getVariable(key) || "";
+    setVariable(key, `${oldValue}${finalInput}`);
+}
+
 const startTestRegex = "\\[test (.+)\\]";
 
 const operations = {
@@ -362,6 +384,9 @@ const operations = {
     "expect variable (.+) to match (.+)": matchVariable,
     "set active browser to (.+)": setActiveBrowser,
     "expect element (.+) to have content (.+)": compareContent,
+    "set variable (.+) to (.+)": doSetVariable,
+    "concat variable (.+) with (.+)": concatVariable,
+    "run test (.+)": doRunTest,
 };
 
 async function handleLines(lines) {
@@ -375,6 +400,7 @@ async function handleLines(lines) {
             getVariable,
             setVariable,
             runTest,
+            handleLines,
         };
 
         if (line.startsWith("#")) {

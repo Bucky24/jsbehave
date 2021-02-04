@@ -39,7 +39,7 @@ In order to use this, you must have the webdriver for your chosen browser access
 
 `reload page`
 
-`require test <test name>`
+`require test <test name>` runs the test only if it has not already been run
 
 `expect elements <selector> to have count of <count>`
 
@@ -52,6 +52,12 @@ In order to use this, you must have the webdriver for your chosen browser access
 `set active browser to <name>`
 
 `expect element <selector> to have contents <text>`
+
+`set variable <variable name> to <text>`
+
+`concat variable <variable name> with <text>`
+
+`run test <test name>` runs the test regardless if it has been run before
 
 ## Tests
 
@@ -66,6 +72,8 @@ Text that is "return" (without quotes) sends the enter key to the element
 Text that starts with a $ will load a variable of the same name
 
 Text that starts with a `/` may be considered a regex by some commands
+
+Text that is "uuid" (without quotes) generates a new uuid-v4
 
 ## Variables
 
@@ -82,7 +90,7 @@ Selectors are of the format `type=value`
 | Type | Description |
 | ---- | ----------- |
 | name | Searches by element name |
-| text | Searches for elements containing text |
+| text | Searches for elements containing text (note this is not <text>, it can handle variables but nothing else) |
 | selector | Searches for elements matching css selector |
 | id | Searches for elements with the given id |
 | data-id | Searches for elements with the given data-test-id |
@@ -147,7 +155,7 @@ module.exports = {
 Selector functions should have the following header:
 
 ```
-function selectorFunction({ By }, inputText)
+function selectorFunction({ By, getVariable }, inputText)
 ```
 
 And should return a selector method `By.*`. They can be used as follows:
