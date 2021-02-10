@@ -4,7 +4,8 @@
     "description": "A module that allows BDD testing for browser based testing in Selenium.",
     "main": "src/index.js",
     "scripts": {
-        "test": "node src/index.js examples/basic_example"
+        "test": "node src/index.js examples/basic_example",
+        "publish": "npm publish --access=public"
     },
     "repository": {
         "type": "git",
