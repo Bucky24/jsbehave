@@ -353,6 +353,26 @@ function concatVariable([ key, input ]) {
     setVariable(key, `${oldValue}${finalInput}`);
 }
 
+async function executeJS(code) {
+    return driver().executeScript(code);
+}
+
+async function clickElementWithOffset([ selector, x, y ]) {
+    const xNum = parseInt(x, 10);
+    const yNum = parseInt(y, 10);
+    const sel = getSelector(selector);
+
+    const elem = await driver().findElement(sel);
+    let offset = await elem.getRect();
+    let elemX = parseInt(await offset.x, 10);
+    let elemY = parseInt(await offset.y, 10);
+    const actions = driver().actions({ async: true });
+    await actions.move({
+        x: elemX + xNum,
+        y: elemY + yNum,
+    }).click().perform();
+}
+
 const startTestRegex = "\\[test (.+)\\]";
 
 const operations = {
@@ -363,6 +383,7 @@ const operations = {
     "wait for title to be \"(.+)\"": waitForTitle,
     [startTestRegex]: startTest,
     "\\[endtest\\]": endTest,
+    "click (.+) with offset \\([ ]*([0-9-.]+)\\,[ ]*([0-9-.]+)[ ]*\\)": clickElementWithOffset,
     "click (.+)": clickElement,
     "sleep (.+)": sleep,
     "wait until located (.+)": waitForElement,
@@ -401,6 +422,7 @@ async function handleLines(lines) {
             setVariable,
             runTest,
             handleLines,
+            executeJS,
         };
 
         if (line.startsWith("#")) {
@@ -425,7 +447,7 @@ async function handleLines(lines) {
                     const test = variables["jsbehave.activeTest"];
                     if (test) {
                         console.log(`Test ${test} - FAILURE`);
-                        console.log(`Failure when running line "${line}"`);
+                        console.log(`Failure when running line "${line}" for "${operation}"`);
                         console.log(error);
                     } else {
                         console.error(error);

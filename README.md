@@ -181,6 +181,7 @@ Params are any params from capture groups in the regex, and the sdk contains the
 | Name | Description |
 |------|-------------|
 | driver | The selenium webdriver instance |
-| getVariable | method to get any variable (including config variables) |
-| setVariable | method to set a variable |
-| runTest | method that can run any test group |
+| getVariable | Method to get any variable (including config variables) |
+| setVariable | Method to set a variable |
+| runTest | Method that can run any test group |
+| executeJS | Method that can execute arbitrary JavaScript code on the page |
