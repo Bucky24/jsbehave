@@ -334,8 +334,13 @@ async function compareContent([ selector, text ]) {
     const sel = getSelector(selector);
     const elem = await driver().findElement(sel);
     text = getText(text);
-    const html = await elem.getAttribute('innerHTML')
+    const html = await elem.getAttribute('innerHTML');
     if (html === text) {
+        return;
+    }
+
+    const value = await elem.getAtribute('value');
+    if (value === text) {
         return;
     }
 
