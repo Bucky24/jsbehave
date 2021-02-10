@@ -180,7 +180,6 @@ async function waitForText([ selector, text ]) {
     const sel = getSelector(selector);
     const elem = await driver().findElement(sel);
     text = getText(text);
-    console.log(elem, text, elem.text)
     if (elem.text === text) {
         return;
     }
@@ -327,7 +326,7 @@ function closeBrowserWithName([ name ]) {
         throw new Error(`Unable to close browser with name "${name}": no driver found`);
     }
     delete variables[`jsbehave.driver.${name}`];
-    return driver.quit();
+    return driver.close();
 }
 
 async function compareContent([ selector, text ]) {
@@ -339,7 +338,7 @@ async function compareContent([ selector, text ]) {
         return;
     }
 
-    const value = await elem.getAtribute('value');
+    const value = await elem.getAttribute('value');
     if (value === text) {
         return;
     }
@@ -447,6 +446,7 @@ async function handleLines(lines) {
                 params.shift();
                 const func = allOperations[operation];
                 try {
+                    // console.log('Running', line);
                     await func(params, baseSdk);
                 } catch (error) {
                     const test = variables["jsbehave.activeTest"];

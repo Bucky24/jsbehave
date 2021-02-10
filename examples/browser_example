@@ -12,6 +12,16 @@ type return into name=q
 wait for title to be "webdriver - Google Search"
 [endtest]
 
+[test clear browser]
+open chrome as browser2
+navigate to http://www.google.com
+type "javascript" into name=q
+type return into name=q
+wait for title to be "javascript - Google Search"
+close browser browser2
+set active browser to default
+[endtest]
+
 [test search2]
 type "javascript" into name=q
 type return into name=q
