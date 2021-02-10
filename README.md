@@ -90,10 +90,11 @@ Selectors are of the format `type=value`
 | Type | Description |
 | ---- | ----------- |
 | name | Searches by element name |
-| text | Searches for elements containing text (note this is not <text>, it can handle variables but nothing else) |
+| text | Searches for elements containing text (note this is not `Text`, it can handle variables but nothing else) |
 | selector | Searches for elements matching css selector |
 | id | Searches for elements with the given id |
 | data-id | Searches for elements with the given data-test-id |
+| xpath | Searches for elements matching the given xpath selector |
 
 ## Config File
 
@@ -185,3 +186,4 @@ Params are any params from capture groups in the regex, and the sdk contains the
 | setVariable | Method to set a variable |
 | runTest | Method that can run any test group |
 | executeJS | Method that can execute arbitrary JavaScript code on the page |
+| handleLines | Method that runs an array of JSBehave operations |
