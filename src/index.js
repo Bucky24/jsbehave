@@ -41,6 +41,10 @@ function getVariable(name) {
 }
 
 function setVariable(key, value) {
+    if (key === "clipboard") {
+        clipboardy.writeSync(value);
+        return;
+    }
     variables[key] = value;
 }
 
