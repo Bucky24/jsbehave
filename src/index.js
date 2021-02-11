@@ -23,6 +23,8 @@ const nowDate = `${now.getMonth()+1}-${now.getDate()}-${now.getFullYear()}`;
 const variables = {
     "today_date": nowDate,
     "jsbehave.run_tests": [],
+    "screenshotOnFailure": "true",
+    "screenshotDirectory": ".",
 };
 
 const allTests = {};
@@ -381,6 +383,24 @@ async function clickElementWithOffset([ selector, x, y ]) {
     }).click().perform();
 }
 
+async function takeScreenshot(test) {
+    const activeBrowser = getVariable("jsbehave.active_driver");
+    const image = await driver().takeScreenshot();
+    const useTest = test.replace(/ /g, "_");
+    let configPath = getVariable("screenshotDirectory");
+    const fileName = `test_${useTest}_failure_${activeBrowser}.png`;
+    if (configPath.startsWith('.')) {
+        const cwd = process.cwd()
+        configPath = path.resolve(cwd, configPath);
+    }
+    if (!fs.existsSync(configPath)) {
+        fs.mkdirSync(configPath, { recursive: true });
+    }
+    const fullPath = path.join(configPath, fileName);
+    await fs.promises.writeFile(fullPath, image, 'base64');
+    return fullPath;
+}
+
 const startTestRegex = "\\[test (.+)\\]";
 
 const operations = {
@@ -458,6 +478,11 @@ async function handleLines(lines) {
                         console.log(`Test ${test} - FAILURE`);
                         console.log(`Failure when running line "${line}" for "${operation}"`);
                         console.log(error);
+                        const screenshotOnFailure = getVariable("screenshotOnFailure") === 'true';
+                        if (screenshotOnFailure) {
+                            const screenshot = await takeScreenshot(test);
+                            console.log(`Screenshot saved to ${screenshot}`);
+                        }
                     } else {
                         console.error(error);
                     }

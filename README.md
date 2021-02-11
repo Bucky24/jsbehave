@@ -106,6 +106,13 @@ var_name2=value2
 
 Each value is stored as a variable with the given name.
 
+The following are configs that the jsbehave system will use for various operations:
+
+| Type | Description |
+| ---- | ----------- |
+| screenshotDirectory | The directory where screenshots will be saved. Defaults to `.` |
+| screenshotOnFailure | Boolean. If true (default), takes a screenshot when the test fails. |
+
 ## Before and After blocks
 
 Code in these blocks looks like the following:

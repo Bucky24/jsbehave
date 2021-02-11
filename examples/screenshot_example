@@ -1,0 +1,27 @@
+[before all]
+set variable screenshotDirectory to "./examples/screenshots"
+open chrome
+[endbefore]
+
+[before each]
+set variable screenshotOnFailure to true
+[endbefore]
+
+[test fail with screenshot]
+navigate to http://www.google.com
+type "webdriver" into name=q
+type return into name=q
+wait for title to be "selenium - Google Search"
+[endtest]
+
+[test fail without screenshot]
+set variable screenshotOnFailure to false
+navigate to http://www.google.com
+type "webdriver" into name=q
+type return into name=q
+wait for title to be "selenium - Google Search"
+[endtest]
+
+[after all]
+close browser
+[endafter]
