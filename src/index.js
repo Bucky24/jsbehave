@@ -282,7 +282,7 @@ async function doRunTest([ testName ]) {
 }
 
 async function doRunAction([ actionName ]) {
-    runAction(actionName, true);
+    return runAction(actionName, true);
 }
 
 function loadFuncs([ fileName ]) {
