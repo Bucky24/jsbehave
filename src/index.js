@@ -261,8 +261,10 @@ async function runAction(name, showTitle=false) {
     if (showTitle) {
         console.log("Running action '" + name + "'");
     }
+    const oldBlock = getVariable("jsbehave.activeBlock");
     const content = allActions[name];
     await handleLines(content);
+    variables["jsbehave.activeBlock"] = oldBlock;
 }
 
 async function runTestIfNotRun([ testName ]) {
