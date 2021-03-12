@@ -59,6 +59,12 @@ In order to use this, you must have the webdriver for your chosen browser access
 
 `run test <test name>` runs the test regardless if it has been run before
 
+`[action <action name>]`
+
+`[endaction]`
+
+`run action <action name>` runs the given action
+
 ## Tests
 
 The operations `[test <name>]` and `[endtest]` indicate a test block.
@@ -141,6 +147,23 @@ close browser
 
 `[before all]` blocks will run before all the tests. `[before each]` runs before each test. `[after each]` runs after each test, and `[after all]` runs after all the tests are done. This is similar to most other test systems.
 
+## Action blocks
+
+Code in these blocks looks like the following:
+```
+[action some action]
+open chrome
+[endaction]
+```
+
+These actions are identical to test blocks, except they are not automatically run when tests are run. They can be run as follows:
+
+```
+[test a test]
+run action some action
+[endtest]
+```
+
 ## Custom code
 
 In order to load custom code, put `load funcs <filename>` in your test file.
@@ -191,6 +214,7 @@ Params are any params from capture groups in the regex, and the sdk contains the
 | driver | The selenium webdriver instance |
 | getVariable | Method to get any variable (including config variables) |
 | setVariable | Method to set a variable |
+| runAction | Method that can run any action group |
 | runTest | Method that can run any test group |
 | executeJS | Method that can execute arbitrary JavaScript code on the page |
 | handleLines | Method that runs an array of JSBehave operations |

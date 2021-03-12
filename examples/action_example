@@ -1,0 +1,18 @@
+[before all]
+open chrome
+[endbefore]
+
+[action test]
+navigate to "https://www.google.com"
+[endaction]
+
+[test text]
+run action test
+navigate to "https://www.microsoft.com"
+run action test
+sleep 4
+[endtest]
+
+[after all]
+close browser
+[endafter]

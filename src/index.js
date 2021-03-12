@@ -28,6 +28,7 @@ const variables = {
 };
 
 const allTests = {};
+const allActions = {};
 const beforeAll = [];
 const beforeEach = [];
 const afterAll = [];
@@ -143,16 +144,21 @@ function waitForTitle([ title ]) {
     return driver().wait(until.titleIs(title), 10000)
 }
 
-function startTest([ test ]) {
-    variables["jsbehave.activeTest"] = test;
+function startBlock([ test ]) {
+    variables["jsbehave.activeBlock"] = test;
+}
+
+function endBlock() {
+    delete variables["jsbehave.activeBlock"];
 }
 
 function endTest() {
-    const test = variables["jsbehave.activeTest"];
+    const test = variables["jsbehave.activeBlock"];
 
     console.log(`Test ${test} - SUCCESS`);
-    delete variables["jsbehave.activeTest"];
+    endBlock();
 }
+
 
 function clickElement([ selector ]) {
     const sel = getSelector(selector);
@@ -251,19 +257,32 @@ async function runTest(name, showTitle=false) {
     ];
 }
 
+async function runAction(name, showTitle=false) {
+    if (showTitle) {
+        console.log("Running action '" + name + "'");
+    }
+    const content = allActions[name];
+    await handleLines(content);
+}
+
 async function runTestIfNotRun([ testName ]) {
     const testsRun = getVariable("jsbehave.run_tests");
     if (testsRun.includes(testName)) {
         return;
     }
-    const oldTest = getVariable("jsbehave.activeTest");
+    const oldTest = getVariable("jsbehave.activeBlock");
 
     await runTest(testName, true);
-    variables["jsbehave.activeTest"] = oldTest;
+    variables["jsbehave.activeBlock"] = oldTest;
 }
 
-async function doRunTest([ testName]) {
+
+async function doRunTest([ testName ]) {
     return runTest(testName, true);
+}
+
+async function doRunAction([ actionName ]) {
+    runAction(actionName, true);
 }
 
 function loadFuncs([ fileName ]) {
@@ -402,6 +421,7 @@ async function takeScreenshot(test) {
 }
 
 const startTestRegex = "\\[test (.+)\\]";
+const startActionRegex = "\\[action (.+)\\]";
 
 const operations = {
     "open (.+) as (.+)": openBrowserWithName,
@@ -409,7 +429,7 @@ const operations = {
     "navigate to (.+)": goToPage,
     "type (.+) into (.+)": typeKeys,
     "wait for title to be \"(.+)\"": waitForTitle,
-    [startTestRegex]: startTest,
+    [startTestRegex]: startBlock,
     "\\[endtest\\]": endTest,
     "click (.+) with offset \\([ ]*([0-9-.]+)\\,[ ]*([0-9-.]+)[ ]*\\)": clickElementWithOffset,
     "click (.+)": clickElement,
@@ -436,6 +456,9 @@ const operations = {
     "set variable (.+) to (.+)": doSetVariable,
     "concat variable (.+) with (.+)": concatVariable,
     "run test (.+)": doRunTest,
+    "run action (.+)": doRunAction,
+    [startActionRegex]: startBlock,
+    "\\[endaction\\]": endBlock,
 };
 
 async function handleLines(lines) {
@@ -448,6 +471,7 @@ async function handleLines(lines) {
             driver: driver(),
             getVariable,
             setVariable,
+            runAction,
             runTest,
             handleLines,
             executeJS,
@@ -473,7 +497,7 @@ async function handleLines(lines) {
                     // console.log('Running', line);
                     await func(params, baseSdk);
                 } catch (error) {
-                    const test = variables["jsbehave.activeTest"];
+                    const test = variables["jsbehave.activeBlock"];
                     if (test) {
                         console.log(`Test ${test} - FAILURE`);
                         console.log(`Failure when running line "${line}" for "${operation}"`);
@@ -509,6 +533,7 @@ async function handleLines(lines) {
     let inTest = false;
     let testName = null;
     let allOrEach = null;
+    let inAction = false;
     for (const line of lines) {
         if (line === "") {
             continue;
@@ -538,6 +563,18 @@ async function handleLines(lines) {
             } else if (line === "[after each]") {
                 allOrEach = 'each';
             }
+        } else if (line.startsWith("[action")) {
+            const reg = RegExp(startActionRegex);
+            const matches = line.match(reg);
+            if (matches) {
+                if (testLines.length > 0) {
+                    startLines = [...testLines];
+                }
+                const params = [...matches];
+                inAction = true;
+                testLines = [];
+                testName = params[1];
+            }
         }
 
         testLines.push(line);
@@ -565,6 +602,11 @@ async function handleLines(lines) {
                 testLines = [];
             }
             allOrEach = null;
+        } else if (line === "[endaction]") {
+            inAction = false;
+            allActions[testName] = [...testLines]
+            testName = null;
+            testLines = [];
         }
     }
 
