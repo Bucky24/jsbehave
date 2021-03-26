@@ -4,7 +4,16 @@ open chrome
 
 [test text]
 navigate to "https://www.google.com"
-expect element selector=.szppmdbYutt__middle-slot-promo span to have content "Help California stop COVID-19 with the Exposure Notifications System. "
+wait until exists name=q
+type "foo" into name=q
+sleep 1
+type down into name=q
+sleep 1
+type down into name=q
+sleep 1
+type up into name=q
+sleep 1
+type return into name=q
 [endtest]
 
 [after all]

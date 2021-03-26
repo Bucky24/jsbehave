@@ -110,6 +110,10 @@ function goToPage([ url ]) {
 
 const keyLookup = {
     "return": Key.RETURN,
+    "down": Key.DOWN,
+    "up": Key.UP,
+    "left": Key.LEFT,
+    "right": Key.RIGHT,
 };
 
 function getText(string, allowRegex) {
@@ -280,7 +284,9 @@ async function runTestIfNotRun([ testName ]) {
 
 
 async function doRunTest([ testName ]) {
-    return runTest(testName, true);
+    const oldTest = getVariable("jsbehave.activeBlock");
+    await runTest(testName, true);
+    variables["jsbehave.activeBlock"] = oldTest;
 }
 
 async function doRunAction([ actionName ]) {

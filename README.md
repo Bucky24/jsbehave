@@ -73,13 +73,22 @@ The operations `[test <name>]` and `[endtest]` indicate a test block.
 
 Text that is wrapped in double quotes is treated as text
 
-Text that is "return" (without quotes) sends the enter key to the element
-
 Text that starts with a $ will load a variable of the same name
 
 Text that starts with a `/` may be considered a regex by some commands
 
-Text that is "uuid" (without quotes) generates a new uuid-v4
+Special text elements:
+
+These should be entered without quotes or any other text.
+
+| Name | Description |
+| ---- | ----------- |
+| uuid | Generates a new uuid-v4 |
+| return | Sends enter key |
+| up | Sends up key |
+| down | Sends down key |
+| left | Sends left key |
+| right | Sends right key |
 
 ## Variables
 

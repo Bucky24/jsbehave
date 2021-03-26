@@ -6,10 +6,15 @@ open chrome
 navigate to "https://www.google.com"
 [endaction]
 
+[test test2]
+run action test
+[endtest]
+
 [test text]
 run action test
 navigate to "https://www.microsoft.com"
 run action test
+run test test2
 sleep 4
 [endtest]
 
