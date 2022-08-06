@@ -136,9 +136,9 @@ function getText(string, allowRegex) {
     return string;
 }
 
-function typeKeys([ string, selector ]) {
+async function typeKeys([ string, selector ]) {
     const sel = getSelector(selector);
-    const element = driver().findElement(sel);
+    const element = await driver().findElement(sel);
 
     string = getText(string);
     return element.sendKeys(string);
@@ -428,6 +428,16 @@ async function takeScreenshot(test) {
     return fullPath;
 }
 
+async function windowSwitch(index) {
+    index = parseInt(index, 10);
+    const handles = await driver().getAllWindowHandles();
+    if (handles.length < index) {
+        throw new Error(`Tried to switch to window ${index} but only have ${handles.length} windows`);
+    }
+    console.log('Switching window to window ' + index + ": " + handles[index]);
+    await driver().switchTo().window(handles[index]);
+}
+
 const startTestRegex = "\\[test (.+)\\]";
 const startActionRegex = "\\[action (.+)\\]";
 
@@ -467,6 +477,7 @@ const operations = {
     "run action (.+)": doRunAction,
     [startActionRegex]: startBlock,
     "\\[endaction\\]": endBlock,
+    "switch to window (.+)": windowSwitch,
 };
 
 async function handleLines(lines) {

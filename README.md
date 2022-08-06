@@ -65,6 +65,8 @@ In order to use this, you must have the webdriver for your chosen browser access
 
 `run action <action name>` runs the given action
 
+`switch to window <index>` switches context to the window handle at the index (useful for popups)
+
 ## Tests
 
 The operations `[test <name>]` and `[endtest]` indicate a test block.
