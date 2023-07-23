@@ -666,4 +666,7 @@ async function handleLines(lines) {
         }
         await handleLines(endLines);
     }
+
+    // force terminate
+    process.exit(0);
 })();

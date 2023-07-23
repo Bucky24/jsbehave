@@ -177,7 +177,7 @@ run action some action
 
 ## Custom code
 
-In order to load custom code, put `load funcs <filename>` in your test file.
+In order to load custom code, put `load funcs <filename>` in your test file. Functions can be async.
 
 The function should set `module.exports` to an object that looks like the following:
 
