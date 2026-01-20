@@ -7,15 +7,26 @@ const path = require("path");
 const clipboardy = require('clipboardy');
 const { v4: uuidv4 } = require('uuid');
 
-const fileName = process.argv[2];
+let fileNames = [];
+if (process.argv.length > 2) {
+    fileNames.push(process.argv[2]);
+} else {
+    const rootDir = process.cwd();
+    const entries = fs.readdirSync(rootDir, {
+        recursive: true,
+        withFileTypes: true,
+    });
+
+    fileNames = entries
+        .filter(e => e.isFile() && e.name.endsWith("behave"))
+        .map(e => path.join(e.path, e.name));
+}
+
 let specificTest = null;
 
 if (process.argv.length > 3) {
     specificTest = process.argv[3];
 }
-
-const contents = fs.readFileSync(fileName, "utf-8");
-const lines = contents.split(EOL);
 
 const now = new Date();
 const nowDate = `${now.getMonth()+1}-${now.getDate()}-${now.getFullYear()}`;
@@ -543,128 +554,135 @@ async function handleLines(lines) {
 }
 
 (async function main() {
-    // first pass, consolidate all the code into test blocks
+    for (const fileName of fileNames) {
+        const contents = fs.readFileSync(fileName, "utf-8");
+        const lines = contents.split(EOL);
 
-    let startLines = [];
-    let endLines = [];
+        console.log(`Processing ${fileName}`);
 
-    let testLines = [];
-    let inTest = false;
-    let testName = null;
-    let allOrEach = null;
-    let inAction = false;
-    for (const line of lines) {
-        if (line === "") {
-            continue;
-        }
-        if (line.startsWith("[test")) {
-            const reg = RegExp(`^${startTestRegex}$`)
-            const matches = line.match(reg);
+        // first pass, consolidate all the code into test blocks
 
-            if (matches) {
-                if (testLines.length > 0) {
-                    startLines = [...testLines];
+        let startLines = [];
+        let endLines = [];
+
+        let testLines = [];
+        let inTest = false;
+        let testName = null;
+        let allOrEach = null;
+        let inAction = false;
+        for (const line of lines) {
+            if (line === "") {
+                continue;
+            }
+            if (line.startsWith("[test")) {
+                const reg = RegExp(`^${startTestRegex}$`)
+                const matches = line.match(reg);
+
+                if (matches) {
+                    if (testLines.length > 0) {
+                        startLines = [...testLines];
+                    }
+                    const params = [...matches];
+                    inTest = true;
+                    testLines = [];
+                    testName = params[1];
                 }
-                const params = [...matches];
-                inTest = true;
-                testLines = [];
-                testName = params[1];
-            }
-        } else if (line.startsWith("[before")) {
-            if (line === "[before all]") {
-                allOrEach = 'all';
-            } else if (line === "[before each]") {
-                allOrEach = 'each';
-            }
-        } else if (line.startsWith("[after")) {
-            if (line === "[after all]") {
-                allOrEach = 'all';
-            } else if (line === "[after each]") {
-                allOrEach = 'each';
-            }
-        } else if (line.startsWith("[action")) {
-            const reg = RegExp(startActionRegex);
-            const matches = line.match(reg);
-            if (matches) {
-                if (testLines.length > 0) {
-                    startLines = [...testLines];
+            } else if (line.startsWith("[before")) {
+                if (line === "[before all]") {
+                    allOrEach = 'all';
+                } else if (line === "[before each]") {
+                    allOrEach = 'each';
                 }
-                const params = [...matches];
-                inAction = true;
+            } else if (line.startsWith("[after")) {
+                if (line === "[after all]") {
+                    allOrEach = 'all';
+                } else if (line === "[after each]") {
+                    allOrEach = 'each';
+                }
+            } else if (line.startsWith("[action")) {
+                const reg = RegExp(startActionRegex);
+                const matches = line.match(reg);
+                if (matches) {
+                    if (testLines.length > 0) {
+                        startLines = [...testLines];
+                    }
+                    const params = [...matches];
+                    inAction = true;
+                    testLines = [];
+                    testName = params[1];
+                }
+            }
+
+            testLines.push(line);
+
+            if (line.startsWith("[endtest")) {
+                inTest = false;
+                allTests[testName] = [...testLines]
+                testName = null;
                 testLines = [];
-                testName = params[1];
+            } else if (line === "[endbefore]") {
+                if (allOrEach === "all") {
+                    beforeAll.push([...testLines])
+                    testLines = [];
+                } else if (allOrEach = "every") {
+                    beforeEach.push([...testLines])
+                    testLines = [];
+                }
+                allOrEach = null;
+            } else if (line === "[endafter]") {
+                if (allOrEach === "all") {
+                    afterAll.push([...testLines])
+                    testLines = [];
+                } else if (allOrEach = "every") {
+                    afterEach.push([...testLines])
+                    testLines = [];
+                }
+                allOrEach = null;
+            } else if (line === "[endaction]") {
+                inAction = false;
+                allActions[testName] = [...testLines]
+                testName = null;
+                testLines = [];
             }
         }
 
-        testLines.push(line);
+        if (testLines.length > 0) {
+            endLines = [...testLines];
+        }
 
-        if (line.startsWith("[endtest")) {
-            inTest = false;
-            allTests[testName] = [...testLines]
-            testName = null;
-            testLines = [];
-        } else if (line === "[endbefore]") {
-            if (allOrEach === "all") {
-                beforeAll.push([...testLines])
-                testLines = [];
-            } else if (allOrEach = "every") {
-                beforeEach.push([...testLines])
-                testLines = [];
+        if (specificTest) {
+            if (!allTests[specificTest]) {
+                console.log("No test case found for '" + specificTest + "'");
+                console.log(Object.keys(allTests));
+                return;
             }
-            allOrEach = null;
-        } else if (line === "[endafter]") {
-            if (allOrEach === "all") {
-                afterAll.push([...testLines])
-                testLines = [];
-            } else if (allOrEach = "every") {
-                afterEach.push([...testLines])
-                testLines = [];
+
+            await handleLines(startLines);
+            console.log("Running beforeAll");
+            for (const before of beforeAll) {
+                await handleLines(before);
             }
-            allOrEach = null;
-        } else if (line === "[endaction]") {
-            inAction = false;
-            allActions[testName] = [...testLines]
-            testName = null;
-            testLines = [];
+            await runTest(specificTest, true);
+            console.log("Running afterAll");
+            for (const after of afterAll) {
+                await handleLines(after);
+            }
+            await handleLines(endLines);
+        } else {
+            await handleLines(startLines);
+            console.log("Running beforeAll");
+            for (const before of beforeAll) {
+                await handleLines(before);
+            }
+            for (const testName in allTests) {
+                await runTest(testName, true);
+            }
+            console.log("Running afterAll");
+            for (const after of afterAll) {
+                await handleLines(after);
+            }
+            await handleLines(endLines);
         }
-    }
-
-    if (testLines.length > 0) {
-        endLines = [...testLines];
-    }
-
-    if (specificTest) {
-        if (!allTests[specificTest]) {
-            console.log("No test case found for '" + specificTest + "'");
-            console.log(Object.keys(allTests));
-            return;
-        }
-
-        await handleLines(startLines);
-        console.log("Running beforeAll");
-        for (const before of beforeAll) {
-            await handleLines(before);
-        }
-        await runTest(specificTest, true);
-        console.log("Running afterAll");
-        for (const after of afterAll) {
-            await handleLines(after);
-        }
-        await handleLines(endLines);
-    } else {
-        await handleLines(startLines);
-        console.log("Running beforeAll");
-        for (const before of beforeAll) {
-            await handleLines(before);
-        }
-        for (const testName in allTests) {
-            await runTest(testName, true);
-        }
-        console.log("Running afterAll");
-        for (const after of afterAll) {
-            await handleLines(after);
-        }
-        await handleLines(endLines);
     }
 
     // force terminate

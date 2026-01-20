@@ -7,6 +7,8 @@ In order to use this, you must have the webdriver for your chosen browser access
 * Download chromedriver for your browser version
 * Move the binary to /usr/local/bin
 
+Running `jsbehave` directly will locate all files that end in `.behave` and will run them.
+
 ## Operations
 
 `open <browser>` (note the name for this browser is `default`)
