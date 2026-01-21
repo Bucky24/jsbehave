@@ -18,7 +18,9 @@ if (process.argv.length > 2) {
     });
 
     fileNames = entries
-        .filter(e => e.isFile() && e.name.endsWith("behave"))
+        .filter(e => {
+            return e.isFile() && e.name.endsWith(".behave");
+        })
         .map(e => path.join(e.path, e.name));
 }
 
