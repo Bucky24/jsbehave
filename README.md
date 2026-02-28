@@ -53,7 +53,7 @@ Running `jsbehave` directly will locate all files that end in `.behave` and will
 
 `set active browser to <name>`
 
-`expect element <selector> to have contents <text>`
+`expect element <selector> to have content <text>`
 
 `set variable <variable name> to <text>`
 
