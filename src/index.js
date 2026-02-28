@@ -379,13 +379,19 @@ function closeBrowserWithName([ name ]) {
 async function compareContent([ selector, text ]) {
     const sel = getSelector(selector);
     const elem = await driver().findElement(sel);
-    text = getText(text);
+    text = getText(text, true);
     const html = await elem.getAttribute('innerHTML');
+    if (text instanceof RegExp && text.test(html)) {
+        return;
+    }
     if (html === text) {
         return;
     }
 
     const value = await elem.getAttribute('value');
+    if (text instanceof RegExp && text.test(value)) {
+        return;
+    }
     if (value === text) {
         return;
     }
