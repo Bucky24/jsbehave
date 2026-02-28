@@ -4,8 +4,9 @@ const {Builder, By, Key, until} = require('selenium-webdriver');
 const fs = require("fs");
 const { EOL } = require('os');
 const path = require("path");
-const clipboardy = require('clipboardy');
-const { v4: uuidv4 } = require('uuid');
+const { randomUUID } = require('crypto');
+let clipboardy;
+import('clipboardy').then((c) => clipboardy = c);
 
 let fileNames = [];
 if (process.argv.length > 2) {
@@ -143,7 +144,7 @@ function getText(string, allowRegex) {
         regexStr = regexStr.substr(0, regexStr.length-1)
         string = new RegExp(regexStr);
     } else if (string === "uuid") {
-        string = uuidv4();
+        string = randomUUID();
     }
 
     return string;
