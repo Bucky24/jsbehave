@@ -1,14 +1,13 @@
 {
     "name": "@bucky24/jsbehave",
-    "version": "0.12.3",
+    "version": "0.12.4",
     "description": "A module that allows BDD testing for browser based testing in Selenium.",
     "main": "src/index.js",
     "scripts": {
         "test": "node src/index.js examples/basic_example.behave",
         "browserTest": "node src/index.js examples/browser_example.behave",
         "screenshotTest": "node src/index.js examples/screenshot_example.behave",
-        "actionTest": "node src/index.js examples/action_example.behave",
-        "publish": "npm publish --access=public"
+        "actionTest": "node src/index.js examples/action_example.behave"
     },
     "repository": {
         "type": "git",

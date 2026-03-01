@@ -69,6 +69,8 @@ Running `jsbehave` directly will locate all files that end in `.behave` and will
 
 `switch to window <index>` switches context to the window handle at the index (useful for popups)
 
+`read content from element <selector> into variable <variable name>` Takes the value or inner html from the element and stores it in the given variable
+
 ## Tests
 
 The operations `[test <name>]` and `[endtest]` indicate a test block.

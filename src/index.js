@@ -458,6 +458,20 @@ async function windowSwitch(index) {
     await driver().switchTo().window(handles[index]);
 }
 
+async function readContentToVariable([selector, varName]) {
+    const sel = getSelector(selector);
+
+    const elem = await driver().findElement(sel);
+    const value = await elem.getAttribute('value');
+    if (value) {
+        setVariable(varName, value);
+        return;
+    }
+    const html = await elem.getAttribute('innerHTML');
+    
+    setVariable(varName, html);
+}
+
 const startTestRegex = "\\[test (.+)\\]";
 const startActionRegex = "\\[action (.+)\\]";
 
@@ -498,6 +512,7 @@ const operations = {
     [startActionRegex]: startBlock,
     "\\[endaction\\]": endBlock,
     "switch to window (.+)": windowSwitch,
+    "read content from element (.+) into variable (.+)": readContentToVariable,
 };
 
 async function handleLines(lines) {
