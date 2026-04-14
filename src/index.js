@@ -4,8 +4,9 @@ const {Builder, By, Key, until} = require('selenium-webdriver');
 const fs = require("fs");
 const { EOL } = require('os');
 const path = require("path");
-const clipboardy = require('clipboardy');
-const { v4: uuidv4 } = require('uuid');
+const { randomUUID } = require('crypto');
+let clipboardy;
+import('clipboardy').then((c) => clipboardy = c);
 
 let fileNames = [];
 if (process.argv.length > 2) {
@@ -143,7 +144,7 @@ function getText(string, allowRegex) {
         regexStr = regexStr.substr(0, regexStr.length-1)
         string = new RegExp(regexStr);
     } else if (string === "uuid") {
-        string = uuidv4();
+        string = randomUUID();
     }
 
     return string;
@@ -209,12 +210,12 @@ async function waitForText([ selector, text ]) {
     const sel = getSelector(selector);
     const elem = await driver().findElement(sel);
     text = getText(text);
-    if (elem.text === text) {
+    if (elem.text.includes(text)) {
         return;
     }
 
     const value = await elem.getAttribute("value")
-    if (value === text) {
+    if (value.includes(text)) {
         return;
     }
 
@@ -378,14 +379,20 @@ function closeBrowserWithName([ name ]) {
 async function compareContent([ selector, text ]) {
     const sel = getSelector(selector);
     const elem = await driver().findElement(sel);
-    text = getText(text);
+    text = getText(text, true);
     const html = await elem.getAttribute('innerHTML');
-    if (html === text) {
+    if (text instanceof RegExp && text.test(html)) {
+        return;
+    }
+    if (html.includes(text)) {
         return;
     }
 
     const value = await elem.getAttribute('value');
-    if (value === text) {
+    if (text instanceof RegExp && text.test(value)) {
+        return;
+    }
+    if (value.includes(text)) {
         return;
     }
 
@@ -452,6 +459,20 @@ async function windowSwitch(index) {
     await driver().switchTo().window(handles[index]);
 }
 
+async function readContentToVariable([selector, varName]) {
+    const sel = getSelector(selector);
+
+    const elem = await driver().findElement(sel);
+    const value = await elem.getAttribute('value');
+    if (value) {
+        setVariable(varName, value);
+        return;
+    }
+    const html = await elem.getAttribute('innerHTML');
+    
+    setVariable(varName, html);
+}
+
 const startTestRegex = "\\[test (.+)\\]";
 const startActionRegex = "\\[action (.+)\\]";
 
@@ -492,6 +513,7 @@ const operations = {
     [startActionRegex]: startBlock,
     "\\[endaction\\]": endBlock,
     "switch to window (.+)": windowSwitch,
+    "read content from element (.+) into variable (.+)": readContentToVariable,
 };
 
 async function handleLines(lines) {
