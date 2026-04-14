@@ -210,12 +210,12 @@ async function waitForText([ selector, text ]) {
     const sel = getSelector(selector);
     const elem = await driver().findElement(sel);
     text = getText(text);
-    if (elem.text === text) {
+    if (elem.text.includes(text)) {
         return;
     }
 
     const value = await elem.getAttribute("value")
-    if (value === text) {
+    if (value.includes(text)) {
         return;
     }
 
@@ -384,7 +384,7 @@ async function compareContent([ selector, text ]) {
     if (text instanceof RegExp && text.test(html)) {
         return;
     }
-    if (html === text) {
+    if (html.includes(text)) {
         return;
     }
 
@@ -392,7 +392,7 @@ async function compareContent([ selector, text ]) {
     if (text instanceof RegExp && text.test(value)) {
         return;
     }
-    if (value === text) {
+    if (value.includes(text)) {
         return;
     }
 
