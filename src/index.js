@@ -394,6 +394,7 @@ async function compareContent([ selector, text ]) {
 
 function doSetVariable([ key, input ]) {
     const finalInput = getText(input);
+    console.log(`Setting variable ${key} to ${finalInput}`);
     setVariable(key, finalInput);
 }
 
