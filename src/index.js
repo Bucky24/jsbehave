@@ -41,14 +41,25 @@ const variables = {
     "screenshotDirectory": ".",
 };
 
-const allTests = {};
-const allActions = {};
-const beforeAll = [];
-const beforeEach = [];
-const afterAll = [];
-const afterEach = [];
+let allTests = {};
+let allActions = {};
+let beforeAll = [];
+let beforeEach = [];
+let afterAll = [];
+let afterEach = [];
 let customSelectors = {};
 let customOperations = {};
+
+function reset() {
+    allTests = {};
+    allActions = {};
+    beforeAll = [];
+    beforeEach = [];
+    afterAll = [];
+    afterEach = [];
+    customSelectors = {};
+    customOperations = {};
+}
 
 function getVariable(name) {
     if (name === 'clipboard') {
@@ -581,6 +592,9 @@ async function handleLines(lines) {
     for (const fileName of fileNames) {
         const contents = fs.readFileSync(fileName, "utf-8");
         const lines = contents.split(EOL);
+
+        // reset the test framework
+        reset();
 
         console.log(`Processing ${fileName}`);
 
