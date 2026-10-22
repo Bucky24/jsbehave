@@ -381,7 +381,8 @@ function setActiveBrowser([ name ]) {
 function closeBrowserWithName([ name ]) {
     const driver = getVariable(`jsbehave.driver.${name}`);
     if (!driver) {
-        throw new Error(`Unable to close browser with name "${name}": no driver found`);
+        console.log(`Unable to close browser with name "${name}": no driver found`);
+        return;
     }
     delete variables[`jsbehave.driver.${name}`];
     return driver.close();
@@ -450,7 +451,7 @@ async function takeScreenshot(test) {
         console.error(`Unable to take screenshot - driver does not exist`);
         return;
     }
-    const image = activeDriver.takeScreenshot();
+    const image = await activeDriver.takeScreenshot();
     const useTest = test.replace(/ /g, "_");
     let configPath = getVariable("screenshotDirectory");
     const fileName = `test_${useTest}_failure_${activeBrowser}.png`;
