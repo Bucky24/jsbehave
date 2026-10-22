@@ -9,9 +9,67 @@ In order to use this, you must have the webdriver for your chosen browser access
 
 Running `jsbehave` directly will locate all files that end in `.behave` and will run them.
 
+## Blocks
+
+### Test Block
+
+Defines a block of operations that runs when the test framework is triggered.
+
+```
+[test <test name>]
+...
+[endtest]
+```
+
+### Action Block
+
+Defines an Action. This is similar to a test in that it is a block of operations. Actions are not run automatically, however, and require a specific Operation to run them.
+
+```
+[action <action name>]`
+...
+[endaction]
+```
+
+### Before and After blocks
+
+Code in these blocks looks like the following:
+
+```
+[before all]
+open chrome
+[endbefore]
+
+[before each]
+reload page
+[endbefore]
+
+[test blah]
+
+[endtest]
+
+[after each]
+# cleanup
+[endafter]
+
+[after all]
+close browser
+[endafter]
+```
+
+`[before all]` blocks will run before all the tests. `[before each]` runs before each test. `[after each]` runs after each test, and `[after all]` runs after all the tests are done. This is similar to most other test systems.
+
 ## Operations
 
 `open <browser>` (note the name for this browser is `default`)
+
+`open <browser> as <name>` - opens a new browser and attaches its session to the given name
+
+`set active browser to <name>` - sets the current active browser (the one that operations will be run on)
+
+`close browser` - closes the active browser
+
+`close browser <name>` - closes browser with given name
 
 `navigate to <url>`
 
@@ -19,13 +77,9 @@ Running `jsbehave` directly will locate all files that end in `.behave` and will
 
 `wait for title to be <text>`
 
-`[test <string>]`
-
-`[endtest]`
-
 `click <selector>`
 
-`sleep <number>`
+`sleep <number of seconds, can be fractional>`
 
 `wait until located <selector>`
 
@@ -37,21 +91,13 @@ Running `jsbehave` directly will locate all files that end in `.behave` and will
 
 `expect element <selector> to not exist`
 
-`close browser`
-
 `reload page`
 
-`require test <test name>` runs the test only if it has not already been run
+`require test <test name>` - runs the test only if it has not already been run
 
 `expect elements <selector> to have count of <count>`
 
 `expect variable <variable> to match <text>`
-
-`open <browser> as <name>`
-
-`close browser <name>`
-
-`set active browser to <name>`
 
 `expect element <selector> to have content <text>`
 
@@ -59,17 +105,13 @@ Running `jsbehave` directly will locate all files that end in `.behave` and will
 
 `concat variable <variable name> with <text>`
 
-`run test <test name>` runs the test regardless if it has been run before
+`run test <test name>` - runs the test regardless if it has been run before
 
-`[action <action name>]`
+`run action <action name>` - runs the given action
 
-`[endaction]`
+`switch to window <index>` - switches context to the window handle at the index (useful for popups)
 
-`run action <action name>` runs the given action
-
-`switch to window <index>` switches context to the window handle at the index (useful for popups)
-
-`read content from element <selector> into variable <variable name>` Takes the value or inner html from the element and stores it in the given variable
+`read content from element <selector> into variable <variable name>` - Takes the value or inner html from the element and stores it in the given variable
 
 ## Tests
 
@@ -133,51 +175,6 @@ The following are configs that the jsbehave system will use for various operatio
 | ---- | ----------- |
 | screenshotDirectory | The directory where screenshots will be saved. Defaults to `.` |
 | screenshotOnFailure | Boolean. If true (default), takes a screenshot when the test fails. |
-
-## Before and After blocks
-
-Code in these blocks looks like the following:
-
-```
-[before all]
-open chrome
-[endbefore]
-
-[before each]
-reload page
-[endbefore]
-
-[test blah]
-
-[endtest]
-
-[after each]
-# cleanup
-[endafter]
-
-[after all]
-close browser
-[endafter]
-```
-
-`[before all]` blocks will run before all the tests. `[before each]` runs before each test. `[after each]` runs after each test, and `[after all]` runs after all the tests are done. This is similar to most other test systems.
-
-## Action blocks
-
-Code in these blocks looks like the following:
-```
-[action some action]
-open chrome
-[endaction]
-```
-
-These actions are identical to test blocks, except they are not automatically run when tests are run. They can be run as follows:
-
-```
-[test a test]
-run action some action
-[endtest]
-```
 
 ## Custom code
 

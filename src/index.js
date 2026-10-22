@@ -22,6 +22,7 @@ if (process.argv.length > 2) {
         .filter(e => {
             return e.isFile() && e.name.endsWith(".behave");
         })
+        .filter(e => !e.path.includes('node_modules'))
         .map(e => path.join(e.path, e.name));
 }
 
@@ -251,7 +252,7 @@ function closeBrowser() {
     const activeBrowser = getVariable("jsbehave.active_driver");
     const driver = getVariable(`jsbehave.driver.${activeBrowser}`);
     if (!driver) {
-        throw new Error("Unable to close default browser: no driver found");
+        throw new Error("Unable to close active browser: no driver found");
     }
     delete variables[`jsbehave.driver.${activeBrowser}`];
     return driver.close();
@@ -268,15 +269,18 @@ async function noop() {
 
 async function runTest(name, showTitle=false) {
     for (const before of beforeEach) {
-        await handleLines(before);
+        const result = await handleLines(before);
+        if (!result) return false;
     }
     if (showTitle) {
         console.log("Running '" + name + "'");
     }
     const content = allTests[name];
-    await handleLines(content);
+    const result = await handleLines(content);
+    if (!result) return false;
     for (const after of afterEach) {
-        await handleLines(after);
+        const result = await handleLines(after);
+        if (!result) return false;
     }
 
     const testsRun = getVariable("jsbehave.run_tests");
@@ -284,6 +288,8 @@ async function runTest(name, showTitle=false) {
         ...testsRun,
         name,
     ];
+
+    return true;
 }
 
 async function runAction(name, showTitle=false) {
@@ -536,7 +542,7 @@ const operations = {
 
 async function handleLines(lines) {
     for (let i=0;i<lines.length;i++) {
-        const line = lines[i];
+        const { lineNum, line } = lines[i];
         if (line === "") {
             continue;
         }
@@ -574,8 +580,15 @@ async function handleLines(lines) {
                     const test = variables["jsbehave.activeBlock"];
                     if (test) {
                         console.log(`Test ${test} - FAILURE`);
-                        console.log(`Failed on line ${i+1}: "${line}" for "${operation}"`);
-                        console.log(error);
+                        console.log(`Failed on line ${lineNum}: "${line}" for "${operation}"`);
+                        const errorType = error.constructor.name;
+                        if (errorType === "NoSuchElementError") {
+                            console.log(`Could not find any matching element`);
+                        } else {
+                            console.log(error.constructor.name, error);
+                        }
+                        // newline
+                        console.log();
                         const screenshotOnFailure = getVariable("screenshotOnFailure") === 'true';
                         if (screenshotOnFailure) {
                             const screenshot = await takeScreenshot(test);
@@ -584,7 +597,7 @@ async function handleLines(lines) {
                     } else {
                         console.error(error);
                     }
-                    return;
+                    return false;
                 }
                 handled = true;
                 break;
@@ -595,9 +608,12 @@ async function handleLines(lines) {
             console.log(`Unable to handle "${line}"`);
         }
     }
+
+    return true;
 }
 
 (async function main() {
+    const allFailures = [];
     for (const fileName of fileNames) {
         const contents = fs.readFileSync(fileName, "utf-8");
         const lines = contents.split(EOL);
@@ -617,7 +633,8 @@ async function handleLines(lines) {
         let testName = null;
         let allOrEach = null;
         let inAction = false;
-        for (const line of lines) {
+        for (let i=0;i<lines.length;i++) {
+            const line = lines[i];
             if (line === "") {
                 continue;
             }
@@ -660,7 +677,10 @@ async function handleLines(lines) {
                 }
             }
 
-            testLines.push(line);
+            testLines.push({
+                lineNum: i+1,
+                line,
+            });
 
             if (line.startsWith("[endtest")) {
                 inTest = false;
@@ -697,6 +717,8 @@ async function handleLines(lines) {
             endLines = [...testLines];
         }
 
+        let anyError = false;
+
         if (specificTest) {
             if (!allTests[specificTest]) {
                 console.log("No test case found for '" + specificTest + "'");
@@ -704,33 +726,48 @@ async function handleLines(lines) {
                 return;
             }
 
-            await handleLines(startLines);
+            let result = await handleLines(startLines);
+            if (!result) anyError = true;
             console.log("Running beforeAll");
             for (const before of beforeAll) {
-                await handleLines(before);
+                result = await handleLines(before);
+                if (!result) anyError = true;
             }
-            await runTest(specificTest, true);
+            result = await runTest(specificTest, true);
+            if (!result) anyError = true;
             console.log("Running afterAll");
             for (const after of afterAll) {
-                await handleLines(after);
+                result = await handleLines(after);
+                if (!result) anyError = true;
             }
-            await handleLines(endLines);
+            const anyError = await handleLines(endLines);
         } else {
-            await handleLines(startLines);
+            let result = await handleLines(startLines);
+            if (!result) anyError = true;
             console.log("Running beforeAll");
             for (const before of beforeAll) {
-                await handleLines(before);
+                result = await handleLines(before);
+                if (!result) anyError = true;
             }
             for (const testName in allTests) {
-                await runTest(testName, true);
+                result = await runTest(testName, true);
+                if (!result) anyError = true;
             }
             console.log("Running afterAll");
             for (const after of afterAll) {
-                await handleLines(after);
+                result = await handleLines(after);
+                if (!result) anyError = true;
             }
-            await handleLines(endLines);
+            result = await handleLines(endLines);
+            if (!result) anyError = true;
+        }
+
+        if (anyError) {
+            allFailures.push(fileName);
         }
     }
+
+    console.log(`All failing tests:\n${allFailures.join("\n")}`);
 
     // force terminate
     process.exit(0);
