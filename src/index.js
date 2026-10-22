@@ -444,7 +444,12 @@ async function clickElementWithOffset([ selector, x, y ]) {
 
 async function takeScreenshot(test) {
     const activeBrowser = getVariable("jsbehave.active_driver");
-    const image = await driver().takeScreenshot();
+    const activeDriver = await driver();
+    if (!activeDriver) {
+        // don't throw, we get here when an error happens so we're already handling a problem
+        console.error(`Unable to take screenshot - driver does not exist`);
+    }
+    const image = activeDriver.takeScreenshot();
     const useTest = test.replace(/ /g, "_");
     let configPath = getVariable("screenshotDirectory");
     const fileName = `test_${useTest}_failure_${activeBrowser}.png`;
@@ -528,7 +533,8 @@ const operations = {
 };
 
 async function handleLines(lines) {
-    for (let line of lines) {
+    for (let i=0;i<lines.length;i++) {
+        const line = lines[i];
         if (line === "") {
             continue;
         }
@@ -566,7 +572,7 @@ async function handleLines(lines) {
                     const test = variables["jsbehave.activeBlock"];
                     if (test) {
                         console.log(`Test ${test} - FAILURE`);
-                        console.log(`Failure when running line "${line}" for "${operation}"`);
+                        console.log(`Failed on line ${i+1}: "${line}" for "${operation}"`);
                         console.log(error);
                         const screenshotOnFailure = getVariable("screenshotOnFailure") === 'true';
                         if (screenshotOnFailure) {
