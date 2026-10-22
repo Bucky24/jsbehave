@@ -448,6 +448,7 @@ async function takeScreenshot(test) {
     if (!activeDriver) {
         // don't throw, we get here when an error happens so we're already handling a problem
         console.error(`Unable to take screenshot - driver does not exist`);
+        return;
     }
     const image = activeDriver.takeScreenshot();
     const useTest = test.replace(/ /g, "_");
