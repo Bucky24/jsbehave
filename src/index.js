@@ -410,11 +410,11 @@ async function compareContent([ selector, text ]) {
     if (text instanceof RegExp && text.test(value)) {
         return;
     }
-    if (value.includes(text)) {
+    if (value?.includes(text)) {
         return;
     }
 
-    throw new Error(`Expected element to have inner html of "${text}". Instead it had inner html of "${html}"`);
+    throw new Error(`Expected element to have inner html of "${text}". Instead it had inner html of "${html}" and value of "${value}"`);
 }
 
 function doSetVariable([ key, input ]) {
@@ -427,6 +427,12 @@ function concatVariable([ key, input ]) {
     const finalInput = getText(input);
     const oldValue = getVariable(key) || "";
     setVariable(key, `${oldValue}${finalInput}`);
+}
+
+function concatVariable([ key, key2 ]) {
+    const var1 = getVariable(key) || '';
+    const var2 = getVariable(key2) || "";
+    setVariable(key, `${var1}${var2}`);
 }
 
 async function executeJS(code) {
@@ -532,6 +538,7 @@ const operations = {
     "expect element (.+) to have content (.+)": compareContent,
     "set variable (.+) to (.+)": doSetVariable,
     "concat variable (.+) with (.+)": concatVariable,
+    "concat variables (.+) and (.+)": concatVariables,
     "run test (.+)": doRunTest,
     "run action (.+)": doRunAction,
     [startActionRegex]: startBlock,

@@ -105,6 +105,8 @@ close browser
 
 `concat variable <variable name> with <text>`
 
+`concat variables <variable name> and <variable name>` - concats two variables, storing the result in the first variable
+
 `run test <test name>` - runs the test regardless if it has been run before
 
 `run action <action name>` - runs the given action
