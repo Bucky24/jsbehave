@@ -429,7 +429,7 @@ function concatVariable([ key, input ]) {
     setVariable(key, `${oldValue}${finalInput}`);
 }
 
-function concatVariable([ key, key2 ]) {
+function concatVariables([ key, key2 ]) {
     const var1 = getVariable(key) || '';
     const var2 = getVariable(key2) || "";
     setVariable(key, `${var1}${var2}`);
